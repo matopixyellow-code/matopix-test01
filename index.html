@@ -195,6 +195,22 @@
   // --- Power-ups ---
   let powerups = [];
 
+  // Polyfill for ctx.roundRect (not supported on older iOS Safari)
+  function drawRoundRect(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+  }
+
   const COLORS = [
     ['#ff4f6f', '#ff8fa0'], // red
     ['#ff8c42', '#ffb380'], // orange
@@ -481,12 +497,12 @@
       grad.addColorStop(0, light);
       grad.addColorStop(1, dark);
       ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.roundRect(b.x, b.y, b.w, b.h, 4);
+      drawRoundRect(b.x, b.y, b.w, b.h, 4);
       ctx.fill();
       ctx.globalAlpha = alpha * 0.6;
       ctx.strokeStyle = light;
       ctx.lineWidth = 1;
+      drawRoundRect(b.x, b.y, b.w, b.h, 4);
       ctx.stroke();
       // HP indicator dots
       if (b.maxHp > 1) {
@@ -509,8 +525,7 @@
     ctx.fillStyle = grad;
     ctx.shadowColor = '#4fb8ff';
     ctx.shadowBlur = 16;
-    ctx.beginPath();
-    ctx.roundRect(paddle.x, paddle.y, paddle.w, PADDLE_H, PADDLE_H / 2);
+    drawRoundRect(paddle.x, paddle.y, paddle.w, PADDLE_H, PADDLE_H / 2);
     ctx.fill();
     ctx.shadowBlur = 0;
   }
@@ -604,7 +619,11 @@
     animId = requestAnimationFrame(loop);
   }
 
+  let _starting = false;
   function startGame() {
+    if (_starting) return;
+    _starting = true;
+    setTimeout(() => { _starting = false; }, 600);
     overlay.style.display = 'none';
     gameRunning = true;
     initGame();
